@@ -8,24 +8,24 @@ import { Prisma } from '@prisma/client';
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: Prisma.ProdutoCreateInput) {
-    return this.prisma.produto.create({ data });
+  async create(data: Prisma.ProductCreateInput) {
+    return this.prisma.product.create({ data });
   }
 
   async findAll() {
-    return this.prisma.produto.findMany();
+    return this.prisma.product.findMany();
   }
 
-  async findOne(id: string) {
-    return this.prisma.produto.findUnique({ where: { id } });
+  async findOne(id: number) {
+    return this.prisma.product.findUnique({ where: { id } });
   }
 
-  async update(id: string, data: Prisma.ProdutoUpdateInput) {
-    return this.prisma.produto.update({ where: { id }, data });
+  async update(id: number, data: Prisma.ProductUpdateInput) {
+    return this.prisma.product.update({ where: { id }, data });
   }
 
-  async delete(id: string) {
-    return this.prisma.produto.delete({ where: { id } });
+  async delete(id: number) {
+    return this.prisma.product.delete({ where: { id } });
   }
 }
 

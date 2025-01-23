@@ -9,7 +9,7 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  create(@Body() data: Prisma.ProdutoCreateInput) {
+  create(@Body() data: Prisma.ProductCreateInput) {
     return this.productService.create(data);
   }
 
@@ -19,17 +19,17 @@ export class ProductController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.productService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() data: Prisma.ProdutoUpdateInput) {
+  update(@Param('id') id: number, @Body() data: Prisma.ProductUpdateInput) {
     return this.productService.update(id, data);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
+  delete(@Param('id') id: number) {
     return this.productService.delete(id);
   }
 }
