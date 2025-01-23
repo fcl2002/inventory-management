@@ -13,34 +13,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
   name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+  shop      Shop?     @relation(fields: [shopId], references: [id])
+  shopId    Int?
 
-model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  code        Int
-  description String
-  price       Float
-  quantity    Int        @default(0)
-  tag         Tag?       @relation(fields: [tagId], references: [id])
-  tagId       Int?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
-
-model Tag {
-  id        Int      @id @default(autoincrement())
-  name      String
-  products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
+model Shop {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  acronym     String    @unique
+  city        String
+  products    Product[]
+}
 
+model Product {
+  id         Int      @id @default(autoincrement())
+  idShop     Int
+
+  bling_id   Int      @unique
+  name       String
+  code       Int
+  price      Float
+  stock      Int      @default(0)
+  image_url  String
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

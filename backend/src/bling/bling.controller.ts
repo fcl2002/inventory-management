@@ -1,4 +1,4 @@
-import { Controller, Get, Param, HttpException, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { BlingService } from './bling.service';
 
 @Controller('bling')
@@ -18,5 +18,11 @@ export class BlingController {
       throw new HttpException('ID inválido', HttpStatus.BAD_REQUEST);
     }
     return this.blingService.getProductById(productId);
+  }
+
+  @Post('sync-products')
+  async syncProducts() {
+    await this.blingService.syncProducts();
+    return { message: 'Sincronização concluída com sucesso.' };
   }
 }
