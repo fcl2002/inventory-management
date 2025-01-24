@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProductModule } from './product/product.module';
 import { UserModule } from './user/user.module';
-import { TagModule } from './tag/tag.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { BlingModule } from './bling/bling.module';
@@ -18,7 +17,6 @@ import { OAuthModule } from './o-auth/o-auth.module';
     }),
     ProductModule,
     UserModule,
-    TagModule,
     PrismaModule,
     UserModule,
     BlingModule,
