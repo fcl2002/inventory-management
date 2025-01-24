@@ -55,21 +55,26 @@ export class BlingService {
   async syncProducts(): Promise<void> {
     let page = 1;
     let products;
+    let totalProcessed = 0;
+    const limitPerPage = 100;
 
     do {
       this.logger.log(`Sincronizando página ${page}...`);
       products = await this.getProducts(page);
 
-      if (!products || products.length === 0) break;
+      if (!products || products.length === 0) {
+        this.logger.log('Nenhum produto encontrado.');
+        break;
+      }
 
       for (const product of products) {
         const data = {
           bling_id: parseInt(product.id, 10),
-          name: product.descricao || 'Sem descrição',
-          code: parseInt(product.codigo || '0', 10),
+          name: product.nome || 'SEM NOME',
+          code: product.codigo || 'SEM CÓDIGO',
           price: parseFloat(product.preco || '0.0'),
-          stock: product.estoque?.[0]?.quantidade || 0,
-          image_url: product.imagem || '',
+          stock: product.estoque.saldoVirtualTotal || 0,
+          image_url: product.imagemURL || 'SEM IMAGEM',
         };
 
         await this.prisma.product.upsert({
@@ -79,8 +84,15 @@ export class BlingService {
         });
       }
 
+      totalProcessed += products.length;
+
+      if (products.length < limitPerPage) {
+        this.logger.log('Todos os produtos foram processados.');
+        break;
+      }
+
       page++;
-    } while (products.length > 0);
+    } while (true);
 
     this.logger.log('Sincronização de produtos concluída.');
   }

@@ -20,9 +20,9 @@ export class BlingController {
     return this.blingService.getProductById(productId);
   }
 
-  // @Post('sync-products')
-  // async syncProducts() {
-  //   await this.blingService.syncProducts();
-  //   return { message: 'Sincronização concluída com sucesso.' };
-  // }
+  @Post('sync-products')
+  async syncProducts() {
+    await this.blingService.syncProducts();
+    return { message: 'Sincronização concluída com sucesso.' };
+  }
 }
