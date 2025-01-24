@@ -19,7 +19,7 @@ model User {
   password  String
   name      String
   shop      Shop?     @relation(fields: [shopId], references: [id])
-  shopId    Int?
+  shopId    Int?      @unique
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -30,12 +30,19 @@ model Shop {
   name        String    @unique
   acronym     String    @unique
   city        String
+
+  user        User?     
+  userId      Int       @unique
   products    Product[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Product {
   id         Int      @id @default(autoincrement())
-  idShop     Int
+  shop       Shop?    @relation(fields: [shopId], references: [id])
+  shopId     Int      @unique
 
   bling_id   Int      @unique
   name       String
