@@ -10,6 +10,7 @@ import { OAuthService } from './o-auth/o-auth.service';
 import { OAuthController } from './o-auth/o-auth.controller';
 import { OAuthModule } from './o-auth/o-auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ShopModule } from './shop/shop.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     PrismaModule,
     UserModule,
     BlingModule,
-    OAuthModule
+    OAuthModule,
+    ShopModule
   ],
   controllers: [AppController, OAuthController, OAuthController],
   providers: [AppService, OAuthService, OAuthService],

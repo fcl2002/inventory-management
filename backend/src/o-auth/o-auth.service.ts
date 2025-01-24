@@ -1,96 +1,135 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios, { AxiosResponse } from 'axios';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class OAuthService {
   private readonly logger = new Logger(OAuthService.name);
   private readonly clientId: string;
   private readonly clientSecret: string;
-  private readonly redirectUri: string;
   private readonly tokenUrl: string;
   
   private accessToken: string;
   private refreshToken: string;
+  private expiresAt: Date;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     this.clientId = this.getEnvVariable('BLING_CLIENT_ID');
     this.clientSecret = this.getEnvVariable('BLING_CLIENT_SECRET');
-    this.redirectUri = this.getEnvVariable('BLING_REDIRECT_URI');
     this.tokenUrl = this.getEnvVariable('BLING_TOKEN_URL');
-    this.accessToken = this.getEnvVariable('BLING_ACCESS_TOKEN');   // Token inicial
-    this.refreshToken = this.getEnvVariable('BLING_REFRESH_TOKEN'); // Refresh token inicial
+    
+    this.loadTokensFromDatabase();
+  }
+
+  private async loadTokensFromDatabase(): Promise<void> {
+    try {
+      const authToken = await this.prisma.authToken.findUnique({ where: { id: 1 } });
+  
+      if (authToken) {
+        this.accessToken = authToken.accessToken;
+        this.refreshToken = authToken.refreshToken;
+        this.expiresAt = authToken.expiresAt;
+        this.logger.log('[OAuthService] Tokens carregados do banco com sucesso.');
+      } else {
+        this.logger.warn('[OAuthService] Nenhum token encontrado no banco. Configure os tokens manualmente.');
+      }
+    } catch (error) {
+      this.logger.error('[OAuthService] Erro ao carregar tokens do banco.', error);
+      throw new HttpException('Erro ao carregar tokens do banco.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   private getEnvVariable(key: string): string {
     const value = this.configService.get<string>(key);
     if (!value) {
-      throw new Error(`Environment variable ${key} is not defined.`);
+      throw new Error(`Variável de ambiente ${key} não está definida.`);
     }
     return value;
   }
 
-  getAuthorizationUrl(state: string): string {
-    const authUrl = this.configService.get<string>('BLING_AUTH_URL');
-    const scope = 'read write'; // Defina os escopos necessários para sua aplicação
-    return `${authUrl}?response_type=code&client_id=${this.clientId}&redirect_uri=${this.redirectUri}&scope=${scope}&state=${state}`;
-  }
-
-  async getAccessToken(authorizationCode: string): Promise<string> {
-    try {
-      const response: AxiosResponse = await axios.post(this.tokenUrl, {
-        grant_type: 'authorization_code',
-        code: authorizationCode,
-        redirect_uri: this.redirectUri,
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-      });
-
-      this.accessToken = response.data.access_token;
-      this.refreshToken = response.data.refresh_token;
-
-      this.logger.log('Novo token de acesso obtido com sucesso!');
-      return response.data.access_token;
-    } catch (error) {
-        this.logger.error('Erro ao obter o token de acesso', error);
-        throw new HttpException(
-          error.response?.data || 'Erro ao obter o token de acesso',
-          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-    }
+  private encodeClientCredentials(): string {
+    return Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
   }
 
   async refreshAccessToken(): Promise<string> {
+    if (!this.refreshToken) {
+      this.logger.error('[OAuthService] O refresh token está ausente.');
+      throw new HttpException('Refresh token ausente. Por favor, reautentique.', HttpStatus.UNAUTHORIZED);
+    }
+
+    this.logger.log('[OAuthService] Tentando renovar o token de acesso...');
+
+    const headers = {
+      Authorization: `Basic ${this.encodeClientCredentials()}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: this.refreshToken,
+    });
+    
     try {
-      const response: AxiosResponse = await axios.post(this.tokenUrl, {
-        grant_type: 'refresh_token',
-        refresh_token: this.refreshToken,
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-      });
+      const response: AxiosResponse = await axios.post(this.tokenUrl, body, { headers });
+      const { access_token, refresh_token, expires_in } = response.data;
 
-      this.accessToken = response.data.access_token; // Atualiza o access token
-      this.refreshToken = response.data.refresh_token; // Atualiza o refresh token
+      this.accessToken = access_token;
+      this.refreshToken = refresh_token;
+      this.expiresAt = new Date(Date.now() + expires_in * 1000); // Calcule o novo tempo de expiração
 
-      this.logger.log('Access token atualizado com sucesso!');
-      return response.data.access_token;
+      await this.prisma.authToken.upsert({
+        where: { id: 1 }, // Assumindo que há apenas uma entrada de token
+        update: {
+            accessToken: this.accessToken,
+            refreshToken: this.refreshToken,
+            expiresAt: this.expiresAt,
+        },
+        create: {
+            accessToken: this.accessToken,
+            refreshToken: this.refreshToken,
+            expiresAt: this.expiresAt,
+        },
+    });
+
+    this.logger.log(`[OAuthService] Token de acesso renovado e salvo no banco. Expira em: ${this.expiresAt.toISOString()}`);
+
+
+    return access_token;
     } catch (error) {
-        this.logger.error('Erro ao atualizar o token de acesso', error);
-        throw new HttpException(
-          error.response?.data || 'Erro ao atualizar o token de acesso',
-          error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
-        );
+      const errorMessage = error.response?.data || 'Erro ao renovar o token de acesso';
+      this.logger.error('[OAuthService] Erro ao renovar o token de acesso', errorMessage);
+      throw new HttpException(errorMessage, error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  async ensureValidAccessToken(): Promise<void> {
-    if (!this.accessToken) {
-      this.logger.warn('Access token ausente ou expirado. Atualizando...');
+  async ensureValidAccessToken(): Promise<string> {
+    const now = new Date();
+
+    if (!this.expiresAt || now >= this.expiresAt || now >= new Date(this.expiresAt.getTime() - 60 * 1000)) {
+      this.logger.warn(`[OAuthService] Token expirado ou prestes a expirar. Renovando...`);
       await this.refreshAccessToken();
+    } else {
+      this.logger.log(`[OAuthService] Token válido. Expira em: ${this.expiresAt.toISOString()}`);
     }
+
+    return this.accessToken;
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async autorefreshToken(): Promise<void> {
+    this.logger.log('[OAuthService] Verificando validade do token...');
+    await this.ensureValidAccessToken();
   }
 
   getCurrentAccessToken(): string {
+    if (!this.accessToken) {
+      throw new HttpException('Nenhum token de acesso disponível.',HttpStatus.UNAUTHORIZED,);
+    }
     return this.accessToken;
   }
 }

@@ -111,6 +111,10 @@ npm install @nestjs/config
 npm install @nestjs/schedule
 npm install --save-dev @types/node
 
+npm install bcrypt
+npm install @types/bcrypt --save-dev
+
+
 
 
 

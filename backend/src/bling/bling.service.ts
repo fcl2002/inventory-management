@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
+import { OAuthService } from '../o-auth/o-auth.service';
 
 @Injectable()
 export class BlingService {
@@ -11,7 +12,8 @@ export class BlingService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService  
+    private readonly prisma: PrismaService,
+    private readonly oAuthService: OAuthService  
   ) {
     const baseUrl = 'https://api.bling.com.br/Api/v3';
 
@@ -23,8 +25,12 @@ export class BlingService {
     });
   }
 
-  private async ensureAuthorizationHeader(): Promise<void> {
-    const token = this.configService.get<string>('BLING_ACCESS_TOKEN');
+  private async setAuthorizationHeader(): Promise<void> {
+    this.logger.log('[BlingService] Verificando validade do token...');
+    await this.oAuthService.ensureValidAccessToken();
+
+    const token = await this.oAuthService.getCurrentAccessToken();
+    this.logger.log(`[BlingService] Usando token atualizado: ${token}`);
     this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
@@ -35,7 +41,7 @@ export class BlingService {
   }
 
   async getProducts(page: number = 1): Promise<any> {
-    await this.ensureAuthorizationHeader();
+    await this.setAuthorizationHeader();
     try {
       const response = await this.httpClient.get('/produtos', { params: { page } });
       const products = response.data.data;
@@ -53,11 +59,27 @@ export class BlingService {
     }
   }
 
+  async getProductById(id: number): Promise<any> {
+    await this.setAuthorizationHeader();
+    try {
+      const response = await this.httpClient.get(`/produtos/${id}`);
+      return response.data;
+    } catch (error) {
+      this.logError('getProductById', error);
+      throw new HttpException('Erro ao buscar produto por ID', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   async syncProducts(): Promise<void> {
     let page = 1;
     let products;
     let totalProcessed = 0;
     const limitPerPage = 100;
+
+    await this.setAuthorizationHeader(); // Isso já aciona o refresh se necessário
+
+    this.logger.log('[Teste] Forçando falha de autenticação para testar o refresh...');
+    this.httpClient.defaults.headers.common['Authorization'] = 'Bearer token_invalido';
 
     do {
       this.logger.log(`Sincronizando página ${page}...`);
@@ -98,29 +120,25 @@ export class BlingService {
     this.logger.log('Sincronização de produtos concluída.');
   }
 
-  @Cron(CronExpression.EVERY_10_SECONDS)  // sincronização a cada 10 segundos
+  @Cron(CronExpression.EVERY_MINUTE)  // sincronização a cada 10 segundos
   async handleCron() {
     const currentHour = new Date().getHours();
 
     if(currentHour >= 8 && currentHour < 24) {
-      this.logger.log(`Executando sincronização automática... [${currentHour}h]`);
-      await this.syncProducts();
+      this.logger.log(`[BlingService] Iniciando sincronização... [${currentHour}h]`);
+      const token = await this.oAuthService.ensureValidAccessToken();
+      this.logger.log(`[BlingService] Token válido utilizado: ${token}`);
+
+      try {
+        await this.syncProducts();
+      } catch (error) {
+        this.logger.error('[BlingService] Erro ao sincronizar produtos.', error);
+      }
     }
     else {
-      this.logger.log('Sincronização fora do horário programado [8h-24h]. Aguardando próximo intervalo...');
+      this.logger.log('[BlingService] Fora do horário de sincronização [8h-24h].');
     }
 
-  }
-
-  async getProductById(id: number): Promise<any> {
-    await this.ensureAuthorizationHeader();
-    try {
-      const response = await this.httpClient.get(`/produtos/${id}`);
-      return response.data;
-    } catch (error) {
-      this.logError('getProductById', error);
-      throw new HttpException('Erro ao buscar produto por ID', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
   }
 }
 
