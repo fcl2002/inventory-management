@@ -15,12 +15,12 @@ import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { ProductService } from '../../../../demo/service/ProductService';
-import { Project } from '../../../../types/index'
+import { Projeto } from '../../../../types/index'
 
 /* @todo Used 'as any' for types here. Will fix in next version due to onSelectionChange event type issue. */
 const Crud = () => {
-    let emptyUser: Project.User = {
-        id: '',
+    let emptyUser: Projeto.User = {
+        id: 1,
         name: '',
         login: '',
         password: '',
@@ -31,7 +31,7 @@ const Crud = () => {
     const [userDialog, setUserDialog] = useState(false);
     const [deleteUserDialog, setDeleteUserDialog] = useState(false);
     const [deleteUsersDialog, setDeleteUsersDialog] = useState(false);
-    const [user, setUser] = useState<Project.User>(emptyUser);
+    const [user, setUser] = useState<Projeto.User>(emptyUser);
     const [selectedUsers, setSelectedUsers] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState('');
@@ -95,12 +95,12 @@ const Crud = () => {
         // }
     };
 
-    const editUser = (user: Project.User) => {
+    const editUser = (user: Projeto.User) => {
         setUser({ ...user });
         setUserDialog(true);
     };
 
-    const confirmDeleteUser = (user: Project.User) => {
+    const confirmDeleteUser = (user: Projeto.User) => {
         setUser(user);
         setDeleteUserDialog(true);
     };
@@ -202,7 +202,7 @@ const Crud = () => {
         );
     };
 
-    const idBodyTemplate = (rowData: Project.User) => {
+    const idBodyTemplate = (rowData: Projeto.User) => {
         return (
             <>
                 <span className="p-column-title">Código</span>
@@ -211,7 +211,7 @@ const Crud = () => {
         );
     };
 
-    const nameBodyTemplate = (rowData: Project.User) => {
+    const nameBodyTemplate = (rowData: Projeto.User) => {
         return (
             <>
                 <span className="p-column-title">Nome</span>
@@ -220,7 +220,7 @@ const Crud = () => {
         );
     };
 
-    const loginBodyTemplate = (rowData: Project.User) => {
+    const loginBodyTemplate = (rowData: Projeto.User) => {
         return (
             <>
                 <span className="p-column-title">Login</span>
@@ -229,7 +229,7 @@ const Crud = () => {
         );
     };
 
-    const emailBodyTemplate = (rowData: Project.User) => {
+    const emailBodyTemplate = (rowData: Projeto.User) => {
         return (
             <>
                 <span className="p-column-title">Email</span>
@@ -238,7 +238,7 @@ const Crud = () => {
         );
     };
 
-    const actionBodyTemplate = (rowData: Project.User) => {
+    const actionBodyTemplate = (rowData: Projeto.User) => {
         return (
             <>
                 <Button icon="pi pi-pencil" rounded severity="success" className="mr-2" onClick={() => editUser(rowData)} />
