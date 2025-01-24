@@ -108,6 +108,10 @@ $ npm install --save-dev @types/axios
 
 npm install @nestjs/config
 
+npm install @nestjs/schedule
+npm install --save-dev @types/node
+
+
 
 
 

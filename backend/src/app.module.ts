@@ -9,12 +9,14 @@ import { BlingModule } from './bling/bling.module';
 import { OAuthService } from './o-auth/o-auth.service';
 import { OAuthController } from './o-auth/o-auth.controller';
 import { OAuthModule } from './o-auth/o-auth.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     ProductModule,
     UserModule,
     PrismaModule,

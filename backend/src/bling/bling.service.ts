@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 
 @Injectable()
 export class BlingService {
@@ -95,6 +96,20 @@ export class BlingService {
     } while (true);
 
     this.logger.log('Sincronização de produtos concluída.');
+  }
+
+  @Cron(CronExpression.EVERY_10_SECONDS)  // sincronização a cada 10 segundos
+  async handleCron() {
+    const currentHour = new Date().getHours();
+
+    if(currentHour >= 8 && currentHour < 24) {
+      this.logger.log(`Executando sincronização automática... [${currentHour}h]`);
+      await this.syncProducts();
+    }
+    else {
+      this.logger.log('Sincronização fora do horário programado [8h-24h]. Aguardando próximo intervalo...');
+    }
+
   }
 
   async getProductById(id: number): Promise<any> {
