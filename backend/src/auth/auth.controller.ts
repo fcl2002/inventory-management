@@ -7,14 +7,14 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   constructor(
-    private readonly oAuthService: AuthService,
+    private readonly authService: AuthService,
     private readonly prisma: PrismaService,
   ) {}
 
   @Get('access-token')
   getCurrentToken() {
     try {
-      const token = this.oAuthService.getCurrentAccessToken();
+      const token = this.authService.getCurrentAccessToken();
       return { accessToken: token };
     } catch (error) {
       this.logger.error('Erro ao obter o token de acesso atual.', error);
@@ -39,28 +39,18 @@ export class AuthController {
 
     await this.prisma.authToken.upsert({
       where: { id: 1 },
-      update: {
-        accessToken,
-        refreshToken,
-        expiresAt,
-      },
-      create: {
-        accessToken,
-        refreshToken,
-        expiresAt,
-      },
+      update: { accessToken, refreshToken, expiresAt, },
+      create: { accessToken, refreshToken, expiresAt, },
     });
 
-    this.logger.log(
-      '[AuthController] Token inicial criado ou atualizado com sucesso.',
-    );
+    this.logger.log('[AuthController] Token inicial criado ou atualizado com sucesso.');
     return { message: 'Token inicial criado ou atualizado com sucesso.' };
   }
 
   @Post('refresh-token')
   async refreshAccessToken() {
     try {
-      const newToken = await this.oAuthService.refreshAccessToken();
+      const newToken = await this.authService.refreshAccessToken();
       return { message: 'Token renovado com sucesso.', accessToken: newToken };
     } catch (error) {
       this.logger.error('Erro ao renovar o token de acesso.', error);

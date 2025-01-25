@@ -11,7 +11,7 @@ export class BlingService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly oAuthService: AuthService,
+    private readonly authService: AuthService,
   ) {
     const baseUrl = 'https://api.bling.com.br/Api/v3';
 
@@ -25,9 +25,9 @@ export class BlingService {
 
   private async setAuthorizationHeader(): Promise<void> {
     this.logger.log('[BlingService] Verificando validade do token...');
-    await this.oAuthService.ensureValidAccessToken();
+    await this.authService.ensureValidAccessToken();
 
-    const token = await this.oAuthService.getCurrentAccessToken();
+    const token = await this.authService.getCurrentAccessToken();
     this.logger.log(`[BlingService] Usando token atualizado: ${token}`);
     this.httpClient.defaults.headers.common['Authorization'] =
       `Bearer ${token}`;
@@ -139,7 +139,7 @@ export class BlingService {
       this.logger.log(
         `[BlingService] Iniciando sincronização... [${currentHour}h]`,
       );
-      const token = await this.oAuthService.ensureValidAccessToken();
+      const token = await this.authService.ensureValidAccessToken();
       this.logger.log(`[BlingService] Token válido utilizado: ${token}`);
 
       try {
