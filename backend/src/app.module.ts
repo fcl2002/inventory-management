@@ -11,6 +11,7 @@ import { OAuthController } from './o-auth/o-auth.controller';
 import { OAuthModule } from './o-auth/o-auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ShopModule } from './shop/shop.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { ShopModule } from './shop/shop.module';
     UserModule,
     BlingModule,
     OAuthModule,
-    ShopModule
+    ShopModule,
+    AuthModule
   ],
   controllers: [AppController, OAuthController, OAuthController],
   providers: [AppService, OAuthService, OAuthService],

@@ -108,11 +108,20 @@ $ npm install --save-dev @types/axios
 
 npm install @nestjs/config
 
+### sincronização com API e agendamento/automatização de requisições
 npm install @nestjs/schedule
 npm install --save-dev @types/node
 
+#### criptografia de senha
 npm install bcrypt
 npm install @types/bcrypt --save-dev
+
+#### validação dos dados
+npm install class-validator class-transformer
+
+#### autenticação
+npm install @nestjs/jwt @nestjs/passport passport passport-jwt
+
 
 
 
