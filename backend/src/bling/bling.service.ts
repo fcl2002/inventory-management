@@ -1,9 +1,8 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cron, CronExpression, Interval } from '@nestjs/schedule';
-import { OAuthService } from '../o-auth/o-auth.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class BlingService {
@@ -11,9 +10,8 @@ export class BlingService {
   private readonly logger = new Logger(BlingService.name);
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    private readonly oAuthService: OAuthService  
+    private readonly oAuthService: AuthService,
   ) {
     const baseUrl = 'https://api.bling.com.br/Api/v3';
 
@@ -31,31 +29,38 @@ export class BlingService {
 
     const token = await this.oAuthService.getCurrentAccessToken();
     this.logger.log(`[BlingService] Usando token atualizado: ${token}`);
-    this.httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    this.httpClient.defaults.headers.common['Authorization'] =
+      `Bearer ${token}`;
   }
 
   private logError(context: string, error: any): void {
     const status = error.response?.status || 'Unknown';
-    const message = error.response?.data?.mensagem || error.message || 'Erro desconhecido';
+    const message =
+      error.response?.data?.mensagem || error.message || 'Erro desconhecido';
     this.logger.error(`[${context}] ${message} (Status: ${status})`);
   }
 
   async getProducts(page: number = 1): Promise<any> {
     await this.setAuthorizationHeader();
     try {
-      const response = await this.httpClient.get('/produtos', { params: { page } });
+      const response = await this.httpClient.get('/produtos', {
+        params: { page },
+      });
       const products = response.data.data;
 
       if (!products || products.length === 0) {
         this.logger.warn(`Nenhum produto encontrado na página ${page}`);
         return [];
       }
-  
+
       this.logger.log(`Produtos encontrados: ${products.length}`);
       return products;
     } catch (error) {
       this.logError('getProducts', error);
-      throw new HttpException('Erro ao buscar produtos na API do Bling', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Erro ao buscar produtos na API do Bling',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -66,7 +71,10 @@ export class BlingService {
       return response.data;
     } catch (error) {
       this.logError('getProductById', error);
-      throw new HttpException('Erro ao buscar produto por ID', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Erro ao buscar produto por ID',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -78,8 +86,11 @@ export class BlingService {
 
     await this.setAuthorizationHeader(); // Isso já aciona o refresh se necessário
 
-    this.logger.log('[Teste] Forçando falha de autenticação para testar o refresh...');
-    this.httpClient.defaults.headers.common['Authorization'] = 'Bearer token_invalido';
+    this.logger.log(
+      '[Teste] Forçando falha de autenticação para testar o refresh...',
+    );
+    this.httpClient.defaults.headers.common['Authorization'] =
+      'Bearer token_invalido';
 
     do {
       this.logger.log(`Sincronizando página ${page}...`);
@@ -120,25 +131,29 @@ export class BlingService {
     this.logger.log('Sincronização de produtos concluída.');
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)  // sincronização a cada 10 segundos
+  @Cron(CronExpression.EVERY_MINUTE) // sincronização a cada 10 segundos
   async handleCron() {
     const currentHour = new Date().getHours();
 
-    if(currentHour >= 8 && currentHour < 24) {
-      this.logger.log(`[BlingService] Iniciando sincronização... [${currentHour}h]`);
+    if (currentHour >= 8 && currentHour < 24) {
+      this.logger.log(
+        `[BlingService] Iniciando sincronização... [${currentHour}h]`,
+      );
       const token = await this.oAuthService.ensureValidAccessToken();
       this.logger.log(`[BlingService] Token válido utilizado: ${token}`);
 
       try {
         await this.syncProducts();
       } catch (error) {
-        this.logger.error('[BlingService] Erro ao sincronizar produtos.', error);
+        this.logger.error(
+          '[BlingService] Erro ao sincronizar produtos.',
+          error,
+        );
       }
+    } else {
+      this.logger.log(
+        '[BlingService] Fora do horário de sincronização [8h-24h].',
+      );
     }
-    else {
-      this.logger.log('[BlingService] Fora do horário de sincronização [8h-24h].');
-    }
-
   }
 }
-

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { BlingService } from './bling.service';
 import { BlingController } from './bling.controller';
-import { OAuthModule } from 'src/o-auth/o-auth.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  imports: [OAuthModule],
+  imports: [AuthModule],
   controllers: [BlingController],
   providers: [BlingService],
   exports: [BlingService],

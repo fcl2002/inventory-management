@@ -6,12 +6,12 @@ import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { BlingModule } from './bling/bling.module';
-import { OAuthService } from './o-auth/o-auth.service';
-import { OAuthController } from './o-auth/o-auth.controller';
-import { OAuthModule } from './o-auth/o-auth.module';
+import { AuthService } from './auth/auth.service';
+import { AuthController } from './auth/auth.controller';
+import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ShopModule } from './shop/shop.module';
-import { AuthModule } from './auth/auth.module';
+
 
 @Module({
   imports: [
@@ -24,11 +24,10 @@ import { AuthModule } from './auth/auth.module';
     PrismaModule,
     UserModule,
     BlingModule,
-    OAuthModule,
+    AuthModule,
     ShopModule,
-    AuthModule
   ],
-  controllers: [AppController, OAuthController, OAuthController],
-  providers: [AppService, OAuthService, OAuthService],
+  controllers: [AppController, AuthController, AuthController],
+  providers: [AppService, AuthService, AuthService],
 })
 export class AppModule {}
